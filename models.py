@@ -1,0 +1,40 @@
+### Search state management: Models ###
+from pydantic import BaseModel, Field
+
+class SearchState(BaseModel):
+    session_id: str
+    filters: dict[str, str | int | list] = Field(default_factory=dict)
+    resume_bullets: list[str] = Field(default_factory=list)
+    feedback: list[str] = Field(default_factory=list)
+
+class ResultState(BaseModel):
+    session_id: str
+    candidate_ids: list[int] = Field(default_factory=list)
+
+    resume_bullet_chunks: dict[int, list[tuple[int, float, str]]]  = Field(
+        default_factory=dict
+    )
+    #feedback_chunks: dict[int, list[tuple[int, float, str]]] = Field(default_factory=dict)
+
+    candidate_score: dict[int, float] = Field(default_factory=dict)
+    keyword_weight: dict[str, float] = Field(default_factory=dict)
+
+class DisplayState(BaseModel):
+    session_id: str
+    total_match_count: int = 0
+
+    #by default after each search, the bot would display the top 10 candidates
+    candidate_ids_sorted: list[int] = Field(default_factory=list)
+    display_window: tuple[int, int] = (0, 10) #display window of the candidates list
+
+
+
+class BasicCandidateInfo(BaseModel):
+    candidate_id: int
+    name: str
+    phone_number: str
+    email: str
+    latestCompany: str
+    latestRole: str
+    isCurrent: str 
+    industry: str

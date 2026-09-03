@@ -1,0 +1,12 @@
+langchain
+langchain-community
+langchain-core
+langchain-openai
+langchain-text-splitters
+python-dotenv
+streamlit
+openai
+SQLAlchemy
+langgraph[checkpoint]
+redis[hiredis]
+fastapi[standard]
