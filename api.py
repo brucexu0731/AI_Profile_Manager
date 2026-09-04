@@ -12,6 +12,7 @@ from system_prompts.system_promptV2 import prompt
 import json
 from agent import Agent
 from utils.rag_results import get_rag_results
+from utils.get_candidate_info import get_candidate_info
 
 
 load_dotenv()
@@ -142,6 +143,11 @@ def ask_agent(session_id: str, body: UserQuery):
         #FILTER candidates -> get list of ids & chunks -> update result state/display_state/search_state -> SUMMARIZE
         filter_results = filter_and_rank(res.get("filters"))
         candidate_chunks, candidate_score, final_ids = get_rag_results(filter_results, res.get("resume_bullets"), res.get("keyword_weight"))
+
+        #Todo:
+        #1. update result state with chunks, score and final_ids
+        #2. update display state 
+        #3. update message to list of candidate profile + relevant chunks
     
     # if action == "ROLLBACK":
     #     #ROLLBACK -> filter_and_rank -> update result state/display_state/search_state -> SUMMARIZE
