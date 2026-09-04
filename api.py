@@ -11,6 +11,7 @@ from system_prompts.system_promptV2 import prompt
 
 import json
 from agent import Agent
+from utils.rag_results import get_rag_results
 
 
 load_dotenv()
@@ -140,14 +141,26 @@ def ask_agent(session_id: str, body: UserQuery):
     if action == "FILTER":
         #FILTER candidates -> get list of ids & chunks -> update result state/display_state/search_state -> SUMMARIZE
         filter_results = filter_and_rank(res.get("filters"))
+        candidate_chunks, candidate_score, final_ids = get_rag_results(filter_results, res.get("resume_bullets"), res.get("keyword_weight"))
     
     # if action == "ROLLBACK":
     #     #ROLLBACK -> filter_and_rank -> update result state/display_state/search_state -> SUMMARIZE
     #     version = res.get("version")
 
-    # if action == "RANK":
+    if action == "RANK":
+        pass
 
-    # if action == "COMPARE":
+    if action == "COMPARE":
+        pass
+    
+    if action == "SUMMARIZE":
+        pass
+    
+    if action == "RESIZE":
+        pass
+    
+
+
 
     redis_client.flushdb()
 
@@ -155,5 +168,8 @@ def ask_agent(session_id: str, body: UserQuery):
         "result": res,
         "agent_loop_history": agent.current_loop_history,
         "action": action,
-        "filter_results": filter_results
+        "filter_results": filter_results,
+        "candidate_chunks": candidate_chunks,
+        "candidate_score": candidate_score,
+        "final_ids": final_ids
     }
