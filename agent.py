@@ -39,12 +39,15 @@ class Agent():
     def _get_search_state_key(self, version: int) -> str:
         return f"agent:{self.session_id}:search:v{version}"
 
-    def call(self, message: str):
+    def call(self, message: str | dict):
+        if not isinstance(message, str):
+            message = json.dumps(message)
+            
         self.current_loop_history.append({"role": "user", "content": message})
 
         response = client.chat.completions.create(
             model=openai_model,
-            temperature=0.0,
+            #temperature=0.0,
             messages=[
                 {
                     "role": "system",
@@ -54,10 +57,12 @@ class Agent():
             ]
         )
         result = response.choices[0].message.content
+        parsed_result = json.loads(result)
+        clean_result = json.dumps(parsed_result)
 
-        self.current_loop_history.append({"role": "assistant", "content": json.loads(result)})
+        self.current_loop_history.append({"role": "assistant", "content": clean_result})
 
-        return json.loads(result)
+        return parsed_result
 
 
 

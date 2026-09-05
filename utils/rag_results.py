@@ -1,6 +1,7 @@
 
 import requests
 from pydantic import BaseModel, ConfigDict, Field
+from models import Chunk, ChunkWithKeyword
 
 RAG_API_URL = "http://localhost:8080/agents/rag/work-experiences"
 
@@ -8,18 +9,18 @@ class SearchPayload(BaseModel):
     query: str
     ids: list[int] | None = None
 
-class Chunk(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
+# class Chunk(BaseModel):
+#     model_config = ConfigDict(populate_by_name=True)
 
-    content_id: int = Field(alias="contentId")
-    distance: float
-    content: str
-    work_experience_id: int = Field(alias="workExperienceId")
-    personal_id: int = Field(alias="personalId")
+#     content_id: int = Field(alias="contentId")
+#     distance: float
+#     content: str
+#     work_experience_id: int = Field(alias="workExperienceId")
+#     personal_id: int = Field(alias="personalId")
 
 
-class ChunkWithKeyword(Chunk):
-    keyword: str
+# class ChunkWithKeyword(Chunk):
+#     keyword: str
 
 def call_rag_api(payload: SearchPayload) -> list[Chunk]:
 
@@ -91,7 +92,11 @@ def calculate_candidate_scores(
     return candidate_scores
 
 def get_rag_results(filtered_ids: list[int], resume_bullets: list[str],
-    keyword_weight: dict[str, float]):
+    keyword_weight: dict[str, float]) -> tuple[
+    dict[int, dict[str, list[ChunkWithKeyword]]],
+    dict[int, float],
+    list[int]
+]:
 
     candidate_chunks: dict[int, dict[str, list[ChunkWithKeyword]]] = {} #id -> {keyword -> list of ChunkWithKeyword}
     candidate_score = {} #id -> score

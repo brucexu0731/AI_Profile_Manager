@@ -129,6 +129,29 @@ DISPLAY STATE
 
 ACTIONS
 
+ACTION ROUTING PRINCIPLE
+
+First determine WHAT OPERATION the user is requesting.
+Only after that determine whether the referenced field can support that operation.
+
+The same field may support FILTER but not necessarily RANK.
+
+Examples:
+- "phone number is 4155551234" → FILTER
+- "phone number starts with 415" → FILTER, if supported by backend filter semantics
+- "smallest phone number" → RANK
+- "largest phone number" → RANK
+- "sort by phone number" → RANK
+- "oldest graduation date" → RANK
+- "highest degree is master's" → FILTER
+
+Words indicating ranking/order include:
+smallest, largest, highest, lowest, earliest, latest, oldest, newest,
+most, least, best, worst, top, bottom, sort, rank, order.
+
+Do NOT reinterpret an unsupported RANK request as a FILTER merely because
+the referenced field is allowed in SearchState.filters.
+
     Choose exactly one of the following actions:
     FILTER
     CLARIFY
@@ -280,6 +303,8 @@ Use REJECT when the request is outside the capabilities defined here.
     - the display state & window cannot satisfy the user's RESIZE request, 
     or if the RESIZE window is larger than the maximum window size of 20 
     candidates
+    - Basically if any of the actions cannot be performed due to constraints, 
+    reject it and explain why.
 
     Output:
         {
@@ -325,7 +350,8 @@ RANK changes only presentation order. It does not modify SearchState.
             "profiles": [1, 2, 3]
         }
 
-    profiles must contain only candidate IDs from the relevant displayed subset.
+    profiles must contain only candidate IDs from the relevant displayed subset 
+    from display state.
 
     Semantic/RAG re-ranking is not RANK. Use FILTER with adjusted keyword_weight.
 
@@ -375,6 +401,32 @@ RANK, or COMPARE
     and work-experience data.
 
     After FILTER
+        Input: 
+        {
+            "new_display_state": {
+                "session_id": "0",
+                "total_match_count": 3,
+                "candidate_ids_sorted": [
+                    14,
+                    6,
+                    1
+                ],
+                "display_window": [
+                    0,
+                    10
+                ]
+            },
+            "candidate_profiles": [
+                {
+                    "profile": {...},
+                    "resume_bullets_chunks": [
+                        ["...", distance, keyword]
+                    ]
+                },
+                ...
+            ]
+        }
+
         Return:
             {
                 "action": "SUMMARIZE",
@@ -382,21 +434,22 @@ RANK, or COMPARE
                 "results": [
                     {
                         "summary": "...",
-                        "profile": {...}
                     }
                 ]
             }
         overall_summary should summarize the search and its results in approximately 
         50–100 words.
         
-        Each candidate summary should be approximately 50 words and focus on information 
-        relevant to the current search.
+        Each candidate summary should be approximately 100 words and focus on information 
+        matching the current search criteron especially on resume_bullets using relevant
+        chunks
 
-        Preserve all input profile fields and values exactly.
+        MUST return the profiles in the order given by candidate_ids_sorted
 
     After RANK
-        Use the same output structure, but reorder candidates according to the requested 
-        ranking criterion and explain relevant ranking information in each summary.
+        You will be given a similar input as above, use the same output structure, but 
+        reorder candidates profiles according to the requested ranking criterion from user 
+        and agent context and explain relevant ranking information in each summary.
 
     After COMPARE
         Return:
@@ -405,7 +458,8 @@ RANK, or COMPARE
                 "compare_output": "..."
             }
 
-        Compare only the requested candidates and criteria.
+        Compare only the requested candidates using the previously returned compare message
+        from the agent loop context as criteria.
 
 2. Use SUMMARIZE when the user asks about current applied filters:
     Summarize the current search state and return:

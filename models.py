@@ -1,18 +1,32 @@
 ### Search state management: Models ###
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
+
+class Chunk(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    content_id: int = Field(alias="contentId")
+    distance: float
+    content: str
+    work_experience_id: int = Field(alias="workExperienceId")
+    personal_id: int = Field(alias="personalId")
+
+
+class ChunkWithKeyword(Chunk):
+    keyword: str
 
 class SearchState(BaseModel):
     session_id: str
     filters: dict[str, str | int | list] = Field(default_factory=dict)
     resume_bullets: list[str] = Field(default_factory=list)
-    feedback: list[str] = Field(default_factory=list)
+    #feedback: list[str] = Field(default_factory=list)
+    keyword_weight: dict[str, float] = Field(default_factory=dict)
 
 class ResultState(BaseModel):
     session_id: str
     candidate_ids: list[int] = Field(default_factory=list)
 
-    resume_bullet_chunks: dict[int, list[tuple[int, float, str]]]  = Field(
-        default_factory=dict
+    resume_bullet_chunks: dict[int, dict[str, list[ChunkWithKeyword]]] = Field(
+        default_factory = dict
     )
     #feedback_chunks: dict[int, list[tuple[int, float, str]]] = Field(default_factory=dict)
 

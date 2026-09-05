@@ -13,6 +13,7 @@ import json
 from agent import Agent
 from utils.rag_results import get_rag_results
 from utils.get_candidate_info import get_candidate_info
+from utils.generate_display_profiles import generate_display_profiles
 
 
 load_dotenv()
@@ -132,50 +133,143 @@ def ask_agent(session_id: str, body: UserQuery):
     new_display_state = {}
     message = user_message
     res = {}
+    output = {}
 
     #agent loop
-    #while action not in TERMINAL_ACTIONS:
-
-    res = agent.call("Begin processing user request: " + message)
-    action = res["action"]
-
-    if action == "FILTER":
-        #FILTER candidates -> get list of ids & chunks -> update result state/display_state/search_state -> SUMMARIZE
-        filter_results = filter_and_rank(res.get("filters"))
-        candidate_chunks, candidate_score, final_ids = get_rag_results(filter_results, res.get("resume_bullets"), res.get("keyword_weight"))
-
-        #Todo:
-        #1. update result state with chunks, score and final_ids
-        #2. update display state 
-        #3. update message to list of candidate profile + relevant chunks
     
-    # if action == "ROLLBACK":
-    #     #ROLLBACK -> filter_and_rank -> update result state/display_state/search_state -> SUMMARIZE
-    #     version = res.get("version")
+    i = 0
+    while action not in TERMINAL_ACTIONS and i < 11:
+        i += 1
 
-    if action == "RANK":
-        pass
+        res = agent.call(message)
+        action = res["action"]
 
-    if action == "COMPARE":
-        pass
+        if action == "FILTER":
+            #FILTER candidates -> get list of ids & chunks -> update result state/display_state/search_state -> SUMMARIZE
+            filter_results = filter_and_rank(res.get("filters"))
+            candidate_chunks, candidate_score, final_ids = get_rag_results(filter_results, res.get("resume_bullets"), res.get("keyword_weight", {}))
+
+            #Todo:
+            #1. update result state with chunks, score and final_ids
+            #2. update display state 
+            #3. update message to list of candidate profile + relevant chunks
+
+            new_search_state = SearchState(
+                session_id=session_id,
+                filters=res["filters"],
+                resume_bullets=res["resume_bullets"],
+                keyword_weight=res["keyword_weight"]
+            )
+
+            new_result_state = ResultState(
+                session_id = session_id,
+                candidate_ids = final_ids,
+                resume_bullet_chunks = candidate_chunks,
+                candidate_score = candidate_score,
+                keyword_weight = new_search_state.keyword_weight
+            )
+
+            new_display_state = DisplayState(
+                session_id = session_id,
+                total_match_count = len(final_ids),
+                candidate_ids_sorted = final_ids,  
+            )
+
+            if not final_ids:
+                message = {
+                "new_display_state": new_display_state.model_dump(),
+                "candidate_profiles": []
+            } 
+            else:
+                displayed_candidate_ids = final_ids[:10]
+
+                displayed_candidates_sorted = generate_display_profiles(
+                    displayed_candidate_ids,
+                    candidate_chunks
+                )
+
+                message = {
+                    "new_display_state": new_display_state.model_dump(),
+                    "candidate_profiles": displayed_candidates_sorted
+                }
+        
+        # if action == "ROLLBACK":
+        #     #ROLLBACK -> filter_and_rank -> update result state/display_state/search_state -> SUMMARIZE
+        #     version = res.get("version")
+
+        elif action == "RANK":
+            displayed_candidate_ids = res.get("profiles")
+            displayed_candidates_sorted = generate_display_profiles(
+                displayed_candidate_ids,
+                result_state.resume_bullet_chunks
+            )
+
+            message = {
+                "candidate_profiles": displayed_candidates_sorted
+            }
+
+        elif action == "COMPARE":
+            displayed_candidate_ids = res.get("profiles")
+            displayed_candidates_sorted = generate_display_profiles(
+                displayed_candidate_ids,
+                result_state.resume_bullet_chunks
+            )
+
+            message = {
+                "candidate_profiles": displayed_candidates_sorted
+            }
+        
+        elif action == "SUMMARIZE":
+            output = {
+                "overall_summary": res.get("overall_summary"),
+                "results": res.get("results")
+            }
+
+        elif action == "RESIZE":
+            #LLM will only output resize if the request is valid
+            new_window = res.get("new_window")
+            new_display_state = display_state.model_copy(
+                update={"display_window": new_window}
+            )
+            l, r = new_window
+
+            displayed_candidate_ids = new_display_state.candidate_ids_sorted[l : r]
+
+            displayed_candidates_sorted = generate_display_profiles(
+                displayed_candidate_ids,
+                result_state.resume_bullet_chunks
+            )
+
+            message = {
+                "new_display_state": new_display_state.model_dump(),
+                "candidate_profiles": displayed_candidates_sorted
+            }
+
+        else:
+            output = res
+
     
-    if action == "SUMMARIZE":
-        pass
-    
-    if action == "RESIZE":
-        pass
-    
+    # to do: 
+    # 1. save new states to redis: display, result, search
+    # 2. update versions 
+    # 3. summarize and add assistant output to redis 
 
 
+    #res2 = agent.call(json.dumps(message))
 
     redis_client.flushdb()
 
     return {
-        "result": res,
+        "session_id": session_id,
+        #"result": res,
         "agent_loop_history": agent.current_loop_history,
-        "action": action,
-        "filter_results": filter_results,
-        "candidate_chunks": candidate_chunks,
-        "candidate_score": candidate_score,
-        "final_ids": final_ids
+        "output": output
+        # "action": action,
+        # "filter_results": filter_results,
+        # "candidate_score": candidate_score,
+        # "message": message,
+        #"result2": res2
+        # "candidate_chunks": candidate_chunks,
+        # "candidate_score": candidate_score,
+        # "final_ids": final_ids
     }
