@@ -14,6 +14,7 @@ from agent import Agent
 from utils.rag_results import get_rag_results
 from utils.get_candidate_info import get_candidate_info
 from utils.generate_display_profiles import generate_display_profiles
+from utils.update_redis_states import update_redis_states
 
 
 load_dotenv()
@@ -128,17 +129,23 @@ def ask_agent(session_id: str, body: UserQuery):
 
     #out of loop variables
     action = ""
-    new_search_state = {}
-    new_result_state = {}
-    new_display_state = {}
+    new_search_state: SearchState | None = None
+    new_result_state: ResultState | None = None
+    new_display_state: DisplayState | None = None
+
+    latest_search_state_version = int(redis_client.get(f"agent:{session_id}:latest_version"))
+
+    rollback = False 
     message = user_message
     res = {}
     output = {}
 
+    agent_message = ""
+
     #agent loop
     
     i = 0
-    while action not in TERMINAL_ACTIONS and i < 11:
+    while action not in TERMINAL_ACTIONS and i < 5:
         i += 1
 
         res = agent.call(message)
@@ -175,11 +182,17 @@ def ask_agent(session_id: str, body: UserQuery):
                 candidate_ids_sorted = final_ids,  
             )
 
+            if not rollback:
+                latest_search_state_version += 1
+                current_version = latest_search_state_version
+
+            agent_message += f"\n FILTER {current_version}, found {len(final_ids)} candidates. Displaying {final_ids[:10]}"
+
             if not final_ids:
                 message = {
                 "new_display_state": new_display_state.model_dump(),
                 "candidate_profiles": []
-            } 
+                } 
             else:
                 displayed_candidate_ids = final_ids[:10]
 
@@ -199,6 +212,7 @@ def ask_agent(session_id: str, body: UserQuery):
 
         elif action == "RANK":
             displayed_candidate_ids = res.get("profiles")
+            rank_field = res.get("field")
             displayed_candidates_sorted = generate_display_profiles(
                 displayed_candidate_ids,
                 result_state.resume_bullet_chunks
@@ -207,9 +221,11 @@ def ask_agent(session_id: str, body: UserQuery):
             message = {
                 "candidate_profiles": displayed_candidates_sorted
             }
+            agent_message += f"\n RANK {displayed_candidate_ids} by {rank_field}"
 
         elif action == "COMPARE":
             displayed_candidate_ids = res.get("profiles")
+            compare_message = res.get("message")
             displayed_candidates_sorted = generate_display_profiles(
                 displayed_candidate_ids,
                 result_state.resume_bullet_chunks
@@ -218,6 +234,8 @@ def ask_agent(session_id: str, body: UserQuery):
             message = {
                 "candidate_profiles": displayed_candidates_sorted
             }
+
+            agent_message += f"\n COMPARE {displayed_candidate_ids} by {compare_message}"
         
         elif action == "SUMMARIZE":
             output = {
@@ -244,9 +262,11 @@ def ask_agent(session_id: str, body: UserQuery):
                 "new_display_state": new_display_state.model_dump(),
                 "candidate_profiles": displayed_candidates_sorted
             }
+            agent_message += f"\n RESIZE display window to {new_window}"
 
         else:
             output = res
+            agent_message += f"\n {action}, {res.get('message')}"
 
     
     # to do: 
@@ -257,13 +277,24 @@ def ask_agent(session_id: str, body: UserQuery):
 
     #res2 = agent.call(json.dumps(message))
 
-    redis_client.flushdb()
+    #redis_client.flushdb()
+
+    update_redis_states(
+        new_search_state, 
+        new_result_state, 
+        new_display_state,
+        agent_message,
+        latest_search_state_version,
+        current_version,
+        session_id
+    )
 
     return {
         "session_id": session_id,
         #"result": res,
         "agent_loop_history": agent.current_loop_history,
-        "output": output
+        "output": output,
+        "chat_history": conversation
         # "action": action,
         # "filter_results": filter_results,
         # "candidate_score": candidate_score,
@@ -273,3 +304,7 @@ def ask_agent(session_id: str, body: UserQuery):
         # "candidate_score": candidate_score,
         # "final_ids": final_ids
     }
+
+    @app.post("/agent/reset-cache")
+    def reset_cache():
+        redis_client.flushdb()

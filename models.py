@@ -40,15 +40,4 @@ class DisplayState(BaseModel):
     #by default after each search, the bot would display the top 10 candidates
     candidate_ids_sorted: list[int] = Field(default_factory=list)
     display_window: tuple[int, int] = (0, 10) #display window of the candidates list
-
-
-
-class BasicCandidateInfo(BaseModel):
-    candidate_id: int
-    name: str
-    phone_number: str
-    email: str
-    latestCompany: str
-    latestRole: str
-    isCurrent: str 
-    industry: str
+    
