@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Candidate Assistant</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header>
+        <h1>Candidate Assistant</h1>
+        <p class="session">Session: <span id="session-id"></span></p>
+        <button id="new-session-btn">New Session</button>
+        <button id="clear-history-btn">Clear History</button>
+      </header>
+
+      <div id="messages" class="messages"></div>
+
+      <form id="chat-form" class="chat-form">
+        <input
+          id="query"
+          type="text"
+          placeholder="Ask about candidates..."
+          autocomplete="off"
+          required
+        />
+        <button type="submit" id="send-btn">Send</button>
+      </form>
+    </main>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,160 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #0f1115;
+  color: #e6e8ec;
+}
+
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px;
+  gap: 16px;
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #23262e;
+}
+
+header h1 {
+  margin: 0;
+  flex: 1 1 100%;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #f3f4f6;
+}
+
+.session {
+  margin: 0;
+  flex: 1;
+  font-size: 0.75rem;
+  color: #8b919c;
+  word-break: break-all;
+}
+
+header button {
+  padding: 6px 10px;
+  border: 1px solid #2a2f3a;
+  border-radius: 6px;
+  background: #181b22;
+  color: #c8cdd6;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+header button:hover {
+  background: #222632;
+  border-color: #3a4050;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.messages p {
+  margin: 0;
+  max-width: 88%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  line-height: 1.45;
+  font-size: 0.95rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.messages p:nth-child(odd) {
+  align-self: flex-end;
+  background: #1d4ed8;
+  color: #f8fafc;
+}
+
+.messages p:nth-child(even) {
+  align-self: flex-start;
+  background: #181b22;
+  border: 1px solid #2a2f3a;
+  color: #d7dbe3;
+}
+
+.chat-form {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #23262e;
+}
+
+.chat-form input {
+  flex: 1;
+  padding: 11px 12px;
+  border: 1px solid #2a2f3a;
+  border-radius: 8px;
+  background: #14171d;
+  color: #e6e8ec;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.chat-form input::placeholder {
+  color: #6b7280;
+}
+
+.chat-form input:focus {
+  border-color: #3b82f6;
+}
+
+.chat-form button {
+  padding: 11px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.chat-form button:hover {
+  background: #1d4ed8;
+}
+
+.chat-form button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.loading {
+  align-self: flex-start;
+  padding: 10px 12px;
+}
+
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #2a2f3a;
+  border-top-color: #60a5fa;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

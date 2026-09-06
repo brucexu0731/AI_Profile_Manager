@@ -199,7 +199,8 @@ Use FILTER when the user adds, removes, replaces, or changes search requirements
 
 
 CLARIFY
-Use CLARIFY only when the user's request cannot be translated confidently into one supported action.
+Use CLARIFY only when the user's request cannot be translated confidently into one supported action,
+or when the user greets you prompt the user to make a request.
 
     Output:
         {
@@ -486,17 +487,25 @@ RANK, or COMPARE
         Return:
             {
                 "action": "SUMMARIZE",
-                "compare_output": "..."
+                "overall_summary": "..."
             }
 
         Compare only the requested candidates using the previously returned compare message
-        from the agent loop context as criteria.
+        from the agent loop context as criteria, return the comparison in overall_summary.
 
 2. Use SUMMARIZE when the user asks about current applied filters:
-    Summarize the current search state and return:
+    Summarize the current search state and return the summary in overall_summary:
         {
             "action": "SUMMARIZE",
-            "filters_summary": "..."
+            "overall_summary": "..."
+        }
+
+2. Use SUMMARIZE when the user asks about chat session history:
+    Summarize the chat history using all given context and return 
+    the summary in overall_summary:
+        {
+            "action": "SUMMARIZE",
+            "overall_summary": "..."
         }
 
 RESIZE

@@ -41,12 +41,6 @@ redis_client = redis.Redis.from_url(
     decode_responses=True
 )
 
-app.mount(
-    "/",
-    StaticFiles(directory="frontend", html=True),
-    name="frontend"
-)
-
 class UserQuery(BaseModel):
     query: str
 
@@ -272,11 +266,13 @@ def ask_agent(session_id: str, body: UserQuery):
     )
 
     return {
-        "session_id": session_id,
+        #"session_id": session_id,
         #"result": res,
-        "agent_loop_history": agent.current_loop_history,
-        "output": output,
-        "chat_history": conversation
+        #"agent_loop_history": agent.current_loop_history,
+        "output": output
+        #"chat_history": conversation
+
+
         # "action": action,
         # "filter_results": filter_results,
         # "candidate_score": candidate_score,
@@ -291,3 +287,11 @@ def ask_agent(session_id: str, body: UserQuery):
 @app.post("/agent/reset-cache")
 def reset_cache():
     redis_client.flushdb()
+
+
+# Mount static frontend last so API routes take priority
+app.mount(
+    "/",
+    StaticFiles(directory="frontend", html=True),
+    name="frontend"
+)
