@@ -16,6 +16,8 @@ from utils.get_candidate_info import get_candidate_info
 from utils.generate_display_profiles import generate_display_profiles
 from utils.update_redis_states import update_redis_states
 
+from fastapi.staticfiles import StaticFiles
+
 
 load_dotenv()
 
@@ -39,6 +41,11 @@ redis_client = redis.Redis.from_url(
     decode_responses=True
 )
 
+app.mount(
+    "/",
+    StaticFiles(directory="frontend", html=True),
+    name="frontend"
+)
 
 class UserQuery(BaseModel):
     query: str
@@ -57,39 +64,6 @@ TERMINAL_ACTIONS = {
 
 @app.post("/agent/{session_id}/ask")
 def ask_agent(session_id: str, body: UserQuery):
-    # Retreive from redis if existing session / initialize if new session:
-    # 1. current search state
-    # 2. current display state
-    # 3. Conversation log with versions
-    #     [
-    #     {"role":"user","message":"Find backend engineers","searchState":null},
-    #     {"role":"assistant","message":[18,25,31],"searchState":"v1"},
-
-    #     {"role":"user","message":"Only in Singapore","searchState":"v1"},
-    #     {"role":"assistant","message":[18,25],"searchState":"v2"},
-
-    #     {"role":"user","message":"Tell me about candidate 18","searchState":"v2"},
-    #     {"role":"assistant","message":"Candidate 18 has 6 years of backend experience...","searchState":"v2"},
-
-    #     {"role":"user","message":"Make experience stricter","searchState":"v2"},
-    #     {"role":"assistant","message":"Do you mean require more years of experience?","searchState":"v2"},
-    #     {"role":"user","message":"Yes, at least 5 years","searchState":"v2"},
-    #     {"role":"assistant","message":[18],"searchState":"v3"},
-
-    #     {"role":"user","message":"Go back to before the 5-year requirement","searchState":"v3"},
-    #     {"role":"assistant","message":[18,25],"searchState":"v2"},
-
-    #     {"role":"user","message":"Add fintech experience","searchState":"v2"},
-    #     {"role":"assistant","message":[25],"searchState":"v4"},
-
-    #     {"role":"user","message":"Go back to right after the first search","searchState":"v4"},
-    #     {"role":"assistant","message":[18,25,31],"searchState":"v1"}
-    #     ]
-    #  
-    #     ---> THOSE THREE GETS APPENDED TO SYSTEM PROMPT
-
-    # 4. ResultsState --> should be in sync with display state(display state is just a summary of results state)
-    # 
 
     user_message = body.query
     (
@@ -146,6 +120,7 @@ def ask_agent(session_id: str, body: UserQuery):
     
     i = 0
     while action not in TERMINAL_ACTIONS and i < 5:
+        #the loop shouldn't take more than 4 iterations
         i += 1
 
         res = agent.call(message)
@@ -206,9 +181,20 @@ def ask_agent(session_id: str, body: UserQuery):
                     "candidate_profiles": displayed_candidates_sorted
                 }
         
-        # if action == "ROLLBACK":
-        #     #ROLLBACK -> filter_and_rank -> update result state/display_state/search_state -> SUMMARIZE
-        #     version = res.get("version")
+        elif action == "ROLLBACK":
+            #ROLLBACK -> filter_and_rank -> update result state/display_state/search_state -> SUMMARIZE
+            rollback = True
+            current_version = res.get("version")
+
+            rollback_search_state_json = redis_client.get(f"agent:{session_id}:search:v{current_version}")
+            if rollback_search_state_json is None:
+                raise ValueError(f"Search state version {current_version} not found")
+
+            rollback_search_state = SearchState.model_validate_json(rollback_search_state_json)
+
+            message = {
+                "rollback_search_state": rollback_search_state.model_dump()
+            }
 
         elif action == "RANK":
             displayed_candidate_ids = res.get("profiles")
@@ -268,16 +254,12 @@ def ask_agent(session_id: str, body: UserQuery):
             output = res
             agent_message += f"\n {action}, {res.get('message')}"
 
-    
+    if action not in TERMINAL_ACTIONS:
+        raise Exception("Agent did not reach a terminal action after 5 iterations. Please check the agent logic.")
     # to do: 
     # 1. save new states to redis: display, result, search
     # 2. update versions 
     # 3. summarize and add assistant output to redis 
-
-
-    #res2 = agent.call(json.dumps(message))
-
-    #redis_client.flushdb()
 
     update_redis_states(
         new_search_state, 
@@ -305,6 +287,7 @@ def ask_agent(session_id: str, body: UserQuery):
         # "final_ids": final_ids
     }
 
-    @app.post("/agent/reset-cache")
-    def reset_cache():
-        redis_client.flushdb()
+
+@app.post("/agent/reset-cache")
+def reset_cache():
+    redis_client.flushdb()

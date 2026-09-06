@@ -322,8 +322,10 @@ Use ROLLBACK when the user asks to return to a previous search.
     Output:
         {
             "action": "ROLLBACK",
-            "version": "v2"
+            "version": 2
         }
+    
+    "version" should be an integer corresponding to the determined rollback SearchState version.
 
     After the backend restores that SearchState, you will be called again. Return FILTER 
     with the restored search criteria unchanged.
@@ -337,21 +339,34 @@ Use ROLLBACK when the user asks to return to a previous search.
 
 
 RANK
-RANK changes only presentation order. It does not modify SearchState.
-    Use RANK only when:
+    RANK changes only presentation order. It does not modify SearchState.
+
+    Use RANK when:
     - candidates are currently displayed;
     - the requested candidate subset is small enough to inspect;
-    - the ranking criterion can be determined from structured candidate/profile data.
+    - the requested ranking criterion is a supported structured candidate/profile field.
 
-    Output:
-        {
-            "action": "RANK",
-            "field": "...",
-            "profiles": [1, 2, 3]
-        }
+    IMPORTANT:
+    The candidate profile data DOES NOT need to already be present in the current context.
 
-    profiles must contain only candidate IDs from the relevant displayed subset 
-    from display state.
+    Returning RANK instructs the backend to fetch the required candidate profiles.
+
+    Therefore, NEVER use RANK_COMPARE_DENIED merely because candidate names,
+    companies, titles, degrees, phone numbers, or other profile fields are not
+    currently supplied.
+
+    Example:
+    User: "rank them by name"
+    DisplayState candidates: [14, 1]
+
+    Return:
+    {
+        "action": "RANK",
+        "field": "name",
+        "profiles": [14, 1]
+    }
+
+    The backend will then retrieve candidate profiles and call you again.
 
     Semantic/RAG re-ranking is not RANK. Use FILTER with adjusted keyword_weight.
 
@@ -362,6 +377,22 @@ RANK changes only presentation order. It does not modify SearchState.
             "action": "RANK_COMPARE_DENIED",
             "message": "..."
         }
+    Use RANK_COMPARE_DENIED ONLY when:
+    1. no candidates are currently displayed;
+    2. the displayed subset is too large;
+    3. the requested ranking field/criterion is unsupported.
+
+    Missing candidate profile data is NOT a reason to deny RANK.
+
+    rank by name/company/degree/etc
+    → RANK
+    → backend fetches profiles
+    → reorder presentation
+
+    rank by AI/backend/cloud experience
+    → FILTER
+    → semantic reranking/search weighting
+    → new SearchState
 
 
 COMPARE
@@ -440,7 +471,7 @@ RANK, or COMPARE
         overall_summary should summarize the search and its results in approximately 
         50–100 words.
         
-        Each candidate summary should be approximately 100 words and focus on information 
+        Each candidate summary should be approximately 50 words and focus on information 
         matching the current search criteron especially on resume_bullets using relevant
         chunks
 

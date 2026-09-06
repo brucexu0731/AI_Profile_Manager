@@ -55,6 +55,40 @@ display_key = f"agent:{session_id}:display"
 conversation_key = f"agent:{session_id}:conversation"
 """
 
+# Retreive from redis if existing session / initialize if new session:
+# 1. current search state
+# 2. current display state
+# 3. Conversation log with versions
+#     [
+#     {"role":"user","message":"Find backend engineers","searchState":null},
+#     {"role":"assistant","message":[18,25,31],"searchState":"v1"},
+
+#     {"role":"user","message":"Only in Singapore","searchState":"v1"},
+#     {"role":"assistant","message":[18,25],"searchState":"v2"},
+
+#     {"role":"user","message":"Tell me about candidate 18","searchState":"v2"},
+#     {"role":"assistant","message":"Candidate 18 has 6 years of backend experience...","searchState":"v2"},
+
+#     {"role":"user","message":"Make experience stricter","searchState":"v2"},
+#     {"role":"assistant","message":"Do you mean require more years of experience?","searchState":"v2"},
+#     {"role":"user","message":"Yes, at least 5 years","searchState":"v2"},
+#     {"role":"assistant","message":[18],"searchState":"v3"},
+
+#     {"role":"user","message":"Go back to before the 5-year requirement","searchState":"v3"},
+#     {"role":"assistant","message":[18,25],"searchState":"v2"},
+
+#     {"role":"user","message":"Add fintech experience","searchState":"v2"},
+#     {"role":"assistant","message":[25],"searchState":"v4"},
+
+#     {"role":"user","message":"Go back to right after the first search","searchState":"v4"},
+#     {"role":"assistant","message":[18,25,31],"searchState":"v1"}
+#     ]
+#  
+#     ---> THOSE THREE GETS APPENDED TO SYSTEM PROMPT
+
+# 4. ResultsState --> should be in sync with display state(display state is just a summary of results state)
+# 
+
 def get_or_create_session(session_id: str, user_message: str):
 
     result_key = f"agent:{session_id}:result"
