@@ -200,7 +200,8 @@ Use FILTER when the user adds, removes, replaces, or changes search requirements
 
 CLARIFY
 Use CLARIFY only when the user's request cannot be translated confidently into one supported action,
-or when the user greets you prompt the user to make a request.
+or when the user greets you or tries to chit chat, make some small talk and prompt the user to make 
+a request.
 
     Output:
         {
@@ -571,7 +572,6 @@ criteria or ranking.
         THE MAXIMUM WINDOW SIZE IS 20, if the requested window is too big -> REJECT
     
     RESIZE operates only on the existing candidate_ids_sorted. It never causes a new search.
-    
 
 GLOBAL RULES
 1. Return exactly one valid JSON object.

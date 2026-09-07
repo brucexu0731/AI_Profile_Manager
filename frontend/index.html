@@ -4,28 +4,39 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Candidate Assistant</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="styles.css" />
+
+    <!-- google fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet">
+    <!-- font-family: "Google Sans"; -->
+    
   </head>
   <body>
-    <main class="app">
-      <header>
-        <h1>Candidate Assistant</h1>
-        <p class="session">Session: <span id="session-id"></span></p>
-        <button id="new-session-btn">New Session</button>
-        <button id="clear-history-btn">Clear History</button>
+    <main id="chat">
+      <header id="header">
+        <h2>What's on the agenda today?</h2>
       </header>
 
       <div id="messages" class="messages"></div>
 
+      
+
       <form id="chat-form" class="chat-form">
-        <input
-          id="query"
-          type="text"
-          placeholder="Ask about candidates..."
-          autocomplete="off"
-          required
-        />
-        <button type="submit" id="send-btn">Send</button>
+        <p id="session">Session: <span id="session-id"></span></p>
+        <div id="user-tab">
+            <textarea
+            id="query"
+            type="text"
+            placeholder="Ask about candidates..."
+            autocomplete="off"
+            required
+            rows="1"
+            ></textarea>
+            <button id="new-session-btn">New +</button>
+            <button id="clear-history-btn">Clear History x</button>
+        </div>
       </form>
     </main>
 
