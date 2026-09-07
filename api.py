@@ -54,6 +54,7 @@ TERMINAL_ACTIONS = {
     "REJECT",
     "ROLLBACK_OUT_OF_SCOPE",
     "RANK_COMPARE_DENIED",
+    "GENERAL-KNOWLEDGE"
 }
 
 @app.post("/agent/{session_id}/ask")
@@ -269,8 +270,8 @@ def ask_agent(session_id: str, body: UserQuery):
         #"session_id": session_id,
         #"result": res,
         #"agent_loop_history": agent.current_loop_history,
-        "output": output
-        #"chat_history": conversation
+        "output": output,
+        # "chat_history": conversation
 
 
         # "action": action,

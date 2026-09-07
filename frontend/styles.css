@@ -152,4 +152,9 @@ header > h2 {
             background-color: #323232;
         }
     }
+
+    & > #clear-history-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    }
 }

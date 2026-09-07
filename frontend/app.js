@@ -33,6 +33,9 @@ sessionIdEl.textContent = sessionId
 let chatHistory = getChat()
 messagesEl.innerHTML = chatHistory
 
+const isFetching = localStorage.getItem("isFetching") === "true"
+clearHistoryBtn.disabled = isFetching
+
 if (messagesEl.innerHTML == ""){
     messagesEl.style.display = "none"
     sessionEl.style.display = "none"
@@ -43,7 +46,15 @@ if (messagesEl.innerHTML == ""){
     headerEl.style.display = "none"
 }
 
+function setFetching(isFetching) {
+    localStorage.setItem("isFetching", isFetching)
+    clearHistoryBtn.disabled = isFetching
+}
+
 function newSession() {
+    // in case fetching throws error, we can re-enable the clear history button by starting a new session
+    setFetching(false)
+
     sessionId = newSessionId()
     sessionIdEl.textContent = sessionId
     messagesEl.innerHTML = ""
@@ -56,23 +67,26 @@ function newSession() {
 }
 
 async function clearHistory() {
+    newSession()
     const response = await fetch("/agent/reset-cache", {
         method: "POST" 
     })
     if (!response.ok) {
         throw new Error(`Request failed: ${response.status}`);
     }
-    newSession()
 }
 
 async function submitMessage() {
     const query = formInputEl.value
     formInputEl.value = ""
 
+    //disallow clear history while fetching data
+    setFetching(true)
+
     if (messagesEl.innerHTML == "") {
-        messagesEl.innerHTML += `<p id="first-message"> user: ${query} </p>`
+        messagesEl.innerHTML += `<p id="first-message"> ${query} </p>`
     } else {
-        messagesEl.innerHTML += `<p class="user-message"> user: ${query} </p>`
+        messagesEl.innerHTML += `<p class="user-message"> ${query} </p>`
     }
     messagesEl.innerHTML += `<div class="loading"><span class="spinner"></span>Thinking ... </div>`
     localStorage.setItem("currentChat", messagesEl.innerHTML)
@@ -91,6 +105,7 @@ async function submitMessage() {
     })
 
     document.querySelector(".loading")?.remove()
+    setFetching(false)
 
     if (!response.ok) {
         throw new Error(`Request failed: ${response.status}`);
@@ -107,11 +122,19 @@ async function submitMessage() {
 // })
 
 
-formInputEl.addEventListener("keypress", (event) => {
-    if (event.key === 'Enter' && event.shiftKey) {
+formInputEl.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return
+
+    if (event.shiftKey) return
+
+    // plain Enter NEVER gets default behavior
+    event.preventDefault()
+
+    // if fetching, do nothing
+    if (localStorage.getItem("isFetching") === "true") {
         return
     }
-    else if (event.key === 'Enter') {
-        submitMessage()
-    }
+
+    submitMessage()
+    
 })

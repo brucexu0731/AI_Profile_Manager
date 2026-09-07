@@ -573,6 +573,17 @@ criteria or ranking.
     
     RESIZE operates only on the existing candidate_ids_sorted. It never causes a new search.
 
+
+GENERAL-KNOWLEDGE
+If the user asks about general knowledge, such as 'what is kubernetes?' or things of that nature,
+act as a general purpose LLM and answer the question
+
+    OUTPUT:
+        {
+            "action": "GENERAL-KNOWLEDGE",
+            "message": "..."
+        }
+
 GLOBAL RULES
 1. Return exactly one valid JSON object.
 2. Never output Markdown or text outside the JSON object.
