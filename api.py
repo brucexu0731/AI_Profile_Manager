@@ -114,8 +114,12 @@ def ask_agent(session_id: str, body: UserQuery):
     #agent loop
     
     i = 0
-    while action not in TERMINAL_ACTIONS and i < 5:
-        #the loop shouldn't take more than 4 iterations
+
+    # the maximum agent loop takes 3 iterations, rollback -> filter -> summarize,
+    # if the LLM call fails for some reason, the loop would preserve the states and
+    # the next iteration is essentially a re-try, so the room for retries is about 3
+    # since we are running the loop 6 times
+    while action not in TERMINAL_ACTIONS and i < 6:
         i += 1
 
         res = agent.call(message)
@@ -156,7 +160,7 @@ def ask_agent(session_id: str, body: UserQuery):
                 latest_search_state_version += 1
                 current_version = latest_search_state_version
 
-            agent_message += f"\n FILTER {current_version}, found {len(final_ids)} candidates. Displaying {final_ids[:10]}"
+            displayed_candidates_sorted = []
 
             if not final_ids:
                 message = {
@@ -175,6 +179,11 @@ def ask_agent(session_id: str, body: UserQuery):
                     "new_display_state": new_display_state.model_dump(),
                     "candidate_profiles": displayed_candidates_sorted
                 }
+            
+            agent_message += (
+                f"\n FILTER {current_version}, found {len(final_ids)} candidates. "
+                f"Displaying {[(c['basic_info']['id'], c['basic_info']['name']) for c in displayed_candidates_sorted]}"
+            )
         
         elif action == "ROLLBACK":
             #ROLLBACK -> filter_and_rank -> update result state/display_state/search_state -> SUMMARIZE
@@ -220,8 +229,11 @@ def ask_agent(session_id: str, body: UserQuery):
         
         elif action == "SUMMARIZE":
             output = {
+                "action": "SUMMARIZE",
                 "overall_summary": res.get("overall_summary"),
-                "results": res.get("results")
+                "results": res.get("results"),
+                "html": res.get("html")
+                # "chat_history": conversation
             }
 
         elif action == "RESIZE":
@@ -243,18 +255,19 @@ def ask_agent(session_id: str, body: UserQuery):
                 "new_display_state": new_display_state.model_dump(),
                 "candidate_profiles": displayed_candidates_sorted
             }
-            agent_message += f"\n RESIZE display window to {new_window}"
+            agent_message += (
+                f"\n RESIZE display window to {new_window}"
+                f"Displaying {[(c['basic_info']['id'], c['basic_info']['name']) for c in displayed_candidates_sorted]}"
+            )
 
         else:
             output = res
             agent_message += f"\n {action}, {res.get('message')}"
 
+    # If something went wrong with the agent loop, preserve the previous state, and tell the user to 
+    # retry, throwing error for now
     if action not in TERMINAL_ACTIONS:
-        raise Exception("Agent did not reach a terminal action after 5 iterations. Please check the agent logic.")
-    # to do: 
-    # 1. save new states to redis: display, result, search
-    # 2. update versions 
-    # 3. summarize and add assistant output to redis 
+        raise Exception("Agent did not reach a terminal action after 6 iterations. Please check the agent logic.")
 
     update_redis_states(
         new_search_state, 
@@ -284,6 +297,9 @@ def ask_agent(session_id: str, body: UserQuery):
         # "final_ids": final_ids
     }
 
+"""
+1. FILTER 
+"""
 
 @app.post("/agent/reset-cache")
 def reset_cache():

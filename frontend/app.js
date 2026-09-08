@@ -1,4 +1,7 @@
+import { renderData } from "./rendering.js"
+
 const messagesEl = document.getElementById("messages")
+const messagesWrapperEl = document.getElementById("messages-wrapper")
 const formEl = document.getElementById("chat-form")
 const formInputEl = document.getElementById("query")
 const sessionIdEl = document.getElementById("session-id")
@@ -37,11 +40,11 @@ const isFetching = localStorage.getItem("isFetching") === "true"
 clearHistoryBtn.disabled = isFetching
 
 if (messagesEl.innerHTML == ""){
-    messagesEl.style.display = "none"
+    messagesWrapperEl.style.display = "none"
     sessionEl.style.display = "none"
     headerEl.style.display = "block"
 } else {
-    messagesEl.style.display = "block"
+    messagesWrapperEl.style.display = "block"
     sessionEl.style.display = "block"
     headerEl.style.display = "none"
 }
@@ -61,7 +64,7 @@ function newSession() {
     formInputEl.value = ""
     localStorage.setItem("currentChat", "")
 
-    messagesEl.style.display = "none"
+    messagesWrapperEl.style.display = "none"
     sessionEl.style.display = "none"
     headerEl.style.display = "block"
 }
@@ -90,7 +93,7 @@ async function submitMessage() {
     }
     messagesEl.innerHTML += `<div class="loading"><span class="spinner"></span>Thinking ... </div>`
     localStorage.setItem("currentChat", messagesEl.innerHTML)
-    messagesEl.style.display = "block"
+    messagesWrapperEl.style.display = "block"
     sessionEl.style.display = "block"
     headerEl.style.display = "none"
 
@@ -111,8 +114,10 @@ async function submitMessage() {
         throw new Error(`Request failed: ${response.status}`);
     }
 
-    const res = await response.text()
-    messagesEl.innerHTML += `<p class="assistant-message"> assistant: ${res} </p>`
+    const data = await response.json()
+    console.log("data:", data)
+
+    messagesEl.innerHTML += `<div class="assistant-message"> ${renderData(data)} </div>`
     localStorage.setItem("currentChat", messagesEl.innerHTML)
 }
 

@@ -206,8 +206,11 @@ a request.
     Output:
         {
             "action": "CLARIFY",
-            "message": "..."
+            "message": "...",
+            "html": "..."
         }
+    
+    format "message" into html string inside the "html" field 
 
     Do not clarify when the request can reasonably be inferred from context.
 
@@ -311,8 +314,11 @@ Use REJECT when the request is outside the capabilities defined here.
     Output:
         {
             "action": "REJECT",
-            "message": "..."
+            "message": "...",
+            "html": "..."
         }
+    
+    format "message" into html string inside the "html" field 
 
 
 ROLLBACK
@@ -335,8 +341,11 @@ Use ROLLBACK when the user asks to return to a previous search.
     If the requested state is older than the available ConversationContext:
         {
             "action": "ROLLBACK_OUT_OF_SCOPE",
-            "message": "..."
+            "message": "...",
+            "html": "..."
         }
+        format "message" into html string inside the "html" field 
+
     Do not guess a version.
 
 
@@ -377,8 +386,12 @@ RANK
 
         {
             "action": "RANK_COMPARE_DENIED",
-            "message": "..."
+            "message": "...",
+            "html": "..."
         }
+
+        format "message" into html string inside the "html" field 
+
     Use RANK_COMPARE_DENIED ONLY when:
     1. no candidates are currently displayed;
     2. the displayed subset is too large;
@@ -406,14 +419,17 @@ Use COMPARE when the user asks to compare a small subset of displayed candidates
             "message": "Compare the candidates with emphasis on backend experience."
         }
     Resolve names and references to candidate IDs using DisplayState and 
-    conversation context.
+    conversation context, specifically matching the requested user's name to the 
+    displayed ids to output the list of "profiles"
 
     If the comparison cannot be performed because no candidates are displayed 
     or the requested subset is too large:
         {
             "action": "RANK_COMPARE_DENIED",
-            "message": "..."
+            "message": "...",
+            "html": "..."
         }
+        format "message" into html string inside the "html" field 
 
 
 SUMMARIZE
@@ -468,7 +484,8 @@ RANK, or COMPARE
                     {
                         "summary": "...",
                     }
-                ]
+                ],
+                "html": "..."
             }
         overall_summary should summarize the search and its results in approximately 
         50–100 words.
@@ -479,6 +496,9 @@ RANK, or COMPARE
 
         MUST return the profiles in the order given by candidate_ids_sorted
 
+        format both overall_summary and results, with results being a table, into an html 
+        string inside the "html" field
+
     After RANK
         You will be given a similar input as above, use the same output structure, but 
         reorder candidates profiles according to the requested ranking criterion from user 
@@ -488,25 +508,33 @@ RANK, or COMPARE
         Return:
             {
                 "action": "SUMMARIZE",
-                "overall_summary": "..."
+                "overall_summary": "...",
+                "html": "..."
             }
 
         Compare only the requested candidates using the previously returned compare message
-        from the agent loop context as criteria, return the comparison in overall_summary.
+        from the agent loop context as criteria, return the comparison in overall_summary,
+        format overall_summary into an html string inside the "html" field.
 
 2. Use SUMMARIZE when the user asks about current applied filters:
-    Summarize the current search state and return the summary in overall_summary:
+    Summarize the current search state and return the summary in overall_summary, 
+    format overall_summary into an html string inside the "html" field.
+    
         {
             "action": "SUMMARIZE",
-            "overall_summary": "..."
+            "overall_summary": "...",
+            "html": "..."
         }
 
-2. Use SUMMARIZE when the user asks about chat session history:
+3. Use SUMMARIZE when the user asks about chat session history:
     Summarize the chat history using all given context and return 
-    the summary in overall_summary:
+    the summary in overall_summary, format overall_summary into 
+    an html string inside the "html" field.
+
         {
             "action": "SUMMARIZE",
-            "overall_summary": "..."
+            "overall_summary": "...",
+            "html": "..."
         }
 
 RESIZE
@@ -581,8 +609,11 @@ act as a general purpose LLM and answer the question
     OUTPUT:
         {
             "action": "GENERAL-KNOWLEDGE",
-            "message": "..."
+            "message": "...",
+            "html": "..."
         }
+
+        format "message" into html string inside the "html" field 
 
 GLOBAL RULES
 1. Return exactly one valid JSON object.

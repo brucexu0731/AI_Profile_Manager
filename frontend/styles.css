@@ -1,10 +1,11 @@
 * {
   box-sizing: border-box;
+  scrollbar-color: #555555 black;
 }
 
 body {
   margin: 0;
-  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: black;
   color: #eee;
 }
@@ -49,45 +50,51 @@ header > h2 {
     justify-content: center;
 }
 
-#chat > * {
+header, #chat-form {
   /* border: 3px solid blue; */
   width: 800px;
   max-width: 100%;
 }
 
-#messages {
-  flex-grow: 1;
-  overflow-y: auto;
-  display: block;
-  /* padding: 20px; */
-  /* margin-top: 20px; */
-  
-  /* width: 800px;
-  max-width: 100%; */
+#messages-wrapper {
+    flex-grow: 1;
+    overflow-y: auto;
+    align-self: stretch;
 }
 
-#messages > .user-message {
+#messages {
+  display: block;
+  /* padding: 20px; */
+  width: 800px;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  
+}
+
+
+#messages .user-message {
     /* border: 3px solid blue; */
     margin: 50px 20px 50px auto;
     width: fit-content;
     max-width: 70%;
     background-color: #365e5b;
-    padding: 15px;
+    padding: 15px 25px;
     border-radius: 30px;
 }
 
-#messages > .assistant-message {
+#messages .assistant-message {
     /* border: 3px solid blue; */
     margin: 50px 20px;
 }
 
-#messages > #first-message {
+#messages #first-message {
     /* border: 3px solid blue; */
     margin: 150px 20px 50px auto;
     width: fit-content;
     max-width: 70%;
     background-color: #365e5b;
-    padding: 15px;
+    padding: 15px 25px;
     border-radius: 30px;
 }
 
@@ -103,6 +110,7 @@ header > h2 {
     margin-bottom: 30px;
     border-radius: 50px;
     background-color: #222;
+    padding-right: 10px;
 }
 
 #session {
@@ -127,8 +135,8 @@ header > h2 {
         color:#c9c9c9;
         flex-grow: 1;
         resize: none;
-        margin: 12.5px 30px 15px 30px;
-        font-size: 1.2rem;
+        margin: 17.5px 30px 20px 30px;
+        font-size: 1rem;
         background-color: #222;
         border: none;
 
