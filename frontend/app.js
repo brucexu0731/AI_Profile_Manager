@@ -7,6 +7,7 @@ const formInputEl = document.getElementById("query")
 const sessionIdEl = document.getElementById("session-id")
 const sessionEl = document.getElementById("session")
 const headerEl = document.getElementById("header")
+const titleEl = document.querySelector("#header > h2")
 
 const newSessionBtn = document.getElementById("new-session-btn");
 newSessionBtn.addEventListener("click", newSession);
@@ -67,6 +68,18 @@ function newSession() {
     messagesWrapperEl.style.display = "none"
     sessionEl.style.display = "none"
     headerEl.style.display = "block"
+
+    restartAnimations()
+}
+
+function restartAnimations() {
+    titleEl.style.animation = "none"
+    formEl.style.animation = "none"
+
+    void headerEl.offsetWidth
+
+    titleEl.style.animation = ""
+    formEl.style.animation = ""
 }
 
 async function clearHistory() {
