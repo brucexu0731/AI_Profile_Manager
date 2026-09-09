@@ -26,6 +26,9 @@ header > h2 {
     animation: typing 0.6s 0.3s steps(27, end) forwards;
 }
 
+textarea {
+    font-family: Inter, sans-serif !important;
+}
 
 @keyframes typing {
     from {
@@ -43,6 +46,7 @@ header > h2 {
     display: flex;
     align-items: center;
     gap: 10px;
+    margin: 60px 20px;
 }
 
 .spinner {
@@ -164,7 +168,7 @@ header, #chat-form {
         color:#c9c9c9;
         flex-grow: 1;
         resize: none;
-        margin: 17.5px 30px 20px 30px;
+        margin: 17.5px 30px 20px 40px;
         font-size: 1rem;
         background-color: #222;
         border: none;
@@ -193,5 +197,51 @@ header, #chat-form {
     & > #clear-history-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+    }
+}
+
+.search-results strong {
+    color: #53b1aa;
+}
+
+.search-summary{
+    border-left:3px solid #365e5b;
+    padding:14px 18px;
+    margin-bottom:18px;
+
+    & > p {
+        margin: 0;
+    }
+}
+
+.search-response-title{
+    margin:0 0 10px;
+}
+
+.candidate-card > .candidate-name{
+    font-size:17px;
+    font-weight:600;
+    margin:0 0 8px 0;
+}
+
+.candidate-card{
+    width: 600px; 
+    max-width: calc(100% - 32px); 
+    margin: 16px auto; 
+    padding: 18px; 
+    background: rgb(34, 34, 34); 
+    border: 1px solid transparent; 
+    border-radius: 10px; 
+    font-size: 14px; 
+    line-height: 1.6; 
+    box-sizing: border-box; 
+    transition: border-color 0.2s;
+
+    &:hover{
+        border-color:#365e5b;
+    }
+
+    & > .candidate-summary {
+        margin: 0;
     }
 }

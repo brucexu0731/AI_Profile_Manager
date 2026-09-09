@@ -163,6 +163,7 @@ the referenced field is allowed in SearchState.filters.
     RANK_COMPARE_DENIED
     SUMMARIZE
     RESIZE
+    GENERAL-KNOWLEDGE
     Do not invent other actions.
 
 
@@ -249,6 +250,8 @@ a request.
                     software-engineering work represented in resume content.
 
             If multiple phrases are ambiguous, clarify all of them together.
+            If clarifying for job title, always put the title name in quotes to avoid confusion:
+                - "Do you mean 'healthcare-related' as a job title?"
 
         2. Do NOT clarify when the user explicitly identifies the field
             Phrases such as the following explicitly select resume/work-content search:
@@ -496,11 +499,38 @@ RANK, or COMPARE
 
         MUST return the profiles in the order given by candidate_ids_sorted
 
-        format both overall_summary and results, with results being a table, into an html 
-        string inside the "html" field
+        format both overall_summary and results into an html string inside the "html" field,
+        output exactly this structure:
+
+            <div class="search-results">
+                <div class="search-summary">
+                    <h3 class="search-response-title">[response title]</h3>
+                    <p>[overall summary]</p>
+                </div>
+
+                <div class="candidate-list">
+
+                    <div class="candidate-card">
+                        <p class="candidate-name">[candidate name]</p>
+                        <p class="candidate-summary">[candidate summary]</p>
+                    </div>
+
+                    <!-- Repeat .candidate-card once per displayed candidate -->
+                </div>
+            </div>
+            - Always use the exact class names:
+                - search-results
+                - search-summary
+                - candidate-list
+                - candidate-card
+            - Never use inline `style` attributes, JavaScript, `<style>`, or `<script>`.
+            - Do not invent additional wrapper classes unless explicitly required.
+            - Every candidate must be represented by exactly one `.candidate-card`.
+            - You are allowed to use <strong> to in overall summary and candidate summaries 
+            to highlight, do not highlight more than 3 words at a time.
 
     After RANK
-        You will be given a similar input as above, use the same output structure, but 
+        You will be given a similar input as After FILTER, use the same output structure, but 
         reorder candidates profiles according to the requested ranking criterion from user 
         and agent context and explain relevant ranking information in each summary.
 
@@ -512,9 +542,12 @@ RANK, or COMPARE
                 "html": "..."
             }
 
-        Compare only the requested candidates using the previously returned compare message
-        from the agent loop context as criteria, return the comparison in overall_summary,
-        format overall_summary into an html string inside the "html" field.
+        Compare only the requested candidates using all relevant contexts and the previously 
+        returned compare message from the agent loop context as criteria, return the comparison 
+        in overall_summary. The html should follow the same output struction, except the overall 
+        summary would be of the comparison, and each candidate card would contain brief information
+        only relevant to the comparison
+
 
 2. Use SUMMARIZE when the user asks about current applied filters:
     Summarize the current search state and return the summary in overall_summary, 
@@ -629,5 +662,9 @@ operation is currently executing.
 7. Prefer a supported action over CLARIFY when the user's intent can be 
 determined confidently.
 8. Perform only one action per response.
+9. Unless already defined, output html fields MUST be well formatted, styled, readable and with good 
+spacing between blocks and paragraphs like agent responses from chatgpt dark mode, no background color, 
+highlights and bolds MUST be shades of #53b1aa, and all normal text, titles, etc MUST be white.
+10. For short, text-only responses, put a thin vertical #365e5b bar on the left of the container.
 
 """

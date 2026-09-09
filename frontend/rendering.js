@@ -8,7 +8,7 @@ const renderingFunctions = {
         //         `).join('')}
         //     </ul>
         // `
-        return data.output.html
+        return data.html
     },
     // "COMPARE": (data) => {
     //     return /*html*/`
@@ -19,14 +19,14 @@ const renderingFunctions = {
 
 export const renderData = (data) => {
     
-    if (data.output.html) return data.output.html
+    if (data.html) return data.html
 
     // if there is no html field
 
-    const renderFn = renderingFunctions[data.output.action]
+    const renderFn = renderingFunctions[data.action]
 
     if (!renderFn) {
-        return `[RENDER FUNCTION "${data.output.action||'UNKNOWN ACTION'}" NOT YET IMPLEMENTED]`
+        return `[RENDER FUNCTION "${data.action||'UNKNOWN ACTION'}" NOT YET IMPLEMENTED]`
     }
 
     return renderFn(data)

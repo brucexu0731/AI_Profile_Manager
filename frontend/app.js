@@ -56,6 +56,7 @@ if (messagesEl.innerHTML == ""){
     toggleHome()
 } else {
     toggleChat()
+    scrollToBottom()
 }
 
 //Check if any llm is still processing
@@ -103,6 +104,17 @@ async function clearHistory() {
     }
 }
 
+function scrollToBottom() {
+    const messages = document.querySelectorAll(".msg")
+    const lastMessage = messages[messages.length-1]
+    console.log("lastMessage:", lastMessage?.innerText)
+    console.dir(lastMessage)
+    if (lastMessage) {
+        lastMessage.scrollIntoView({ behavior: 'smooth' })
+
+    }
+}
+
 async function submitMessage() {
     const query = formInputEl.value
     formInputEl.value = ""
@@ -111,15 +123,20 @@ async function submitMessage() {
     setFetching(true)
 
     if (messagesEl.innerHTML == "") {
-        messagesEl.innerHTML += `<p id="first-message"> ${query} </p>`
+        messagesEl.innerHTML += `<p class="msg" id="first-message"> ${query} </p>`
     } else {
-        messagesEl.innerHTML += `<p class="user-message"> ${query} </p>`
+        messagesEl.innerHTML += `<p class="msg user-message"> ${query} </p>`
     }
     messagesEl.innerHTML += `<div class="loading"><span class="spinner"></span>Thinking ... </div>`
     localStorage.setItem("currentChat", messagesEl.innerHTML)
     toggleChat()
 
-    const response = await fetch(`/agent/${sessionId}/ask`, {
+    // find the new message element and scroll to it
+    setTimeout(() => {
+        scrollToBottom()
+    }, 10);
+
+    const response = await fetch(`/agent/${sessionId}/ask-stream`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -129,17 +146,82 @@ async function submitMessage() {
         })
     })
 
+    if (!response.ok) {
+        // throw new Error(`Request failed: ${response.status}`);
+        // ❗❗❗
+        handleBadResponse(response)
+        return
+    }
+
+    let finalData
+    // Handling SSE stream
+    let reader
+    try {
+        reader = response.body.getReader()
+    } catch (error) {
+        // ❗❗❗
+        handleMissingReader(response, error)
+        return
+    }
+    const decoder = new TextDecoder()
+    let buffer = ""
+
+    while (true) {
+        let value
+        let done
+        try {
+            const readResult = await reader.read()
+            value = readResult.value
+            done = readResult.done
+        } catch (error) {
+            // ❗❗❗
+            handleReadError(error)
+            break
+        }
+
+        if (done && !finalData) {
+            // ❗❗❗
+            handleNoFinalData()
+            break
+        }
+
+        if (done && finalData.type === 'error') {
+            // ❗❗❗
+            handleSseError(finalData)
+            break
+        }
+
+        if (done) {
+            break
+        }
+
+        buffer += decoder.decode(value, { stream: true })
+
+        const events = buffer.split("\n\n")
+        buffer = events.pop()  // keep incomplete event
+        if (events.length === 0) continue
+
+        const event = events[events.length - 1]
+        if (!event.startsWith("data: ")) continue
+        const jsonString = event.slice(6)
+        const data = JSON.parse(jsonString)
+
+        if (data.type === "final") {
+            finalData = data.output
+            break
+        }
+
+        const loadingEl = document.querySelector(".loading")
+        if (loadingEl) {
+            loadingEl.innerHTML = `<span class="spinner"></span>${data.output.html}`
+        }
+    }
+
     document.querySelector(".loading")?.remove()
     setFetching(false)
+    console.log("data:", finalData)
 
-    if (!response.ok) {
-        throw new Error(`Request failed: ${response.status}`);
-    }
-    
-    const data = await response.json()
-    console.log("data:", data)
-
-    messagesEl.innerHTML += `<div class="assistant-message"> ${renderData(data)} </div>`
+    messagesEl.innerHTML += `<div class="assistant-message"> ${renderData(finalData)} </div>`
     localStorage.setItem("currentChat", messagesEl.innerHTML)
 }
 
