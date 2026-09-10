@@ -245,3 +245,13 @@ header, #chat-form {
         margin: 0;
     }
 }
+
+.error-message {
+    padding: 25px;
+    margin: 40px 20px;
+    border: 1px solid #3a130f;
+    border-radius: 15px;
+    font-size: 0.88rem;
+    color: #E54C42;
+    background-color: rgba(13, 5, 4, 0.7);;
+}

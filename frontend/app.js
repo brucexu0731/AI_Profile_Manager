@@ -136,21 +136,34 @@ async function submitMessage() {
         scrollToBottom()
     }, 10);
 
-    const response = await fetch(`/agent/${sessionId}/ask-stream`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            query: query
-        })
-    })
 
-    if (!response.ok) {
-        // throw new Error(`Request failed: ${response.status}`);
-        // ❗❗❗
-        handleBadResponse(response)
-        return
+    let response
+    try {
+        response = await fetch(`/agent/${sessionId}/ask-stream`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                query: query
+            })
+        })
+
+        if (!response.ok) {
+            // ❗❗❗
+            console.log("BAD API RESPONSE")
+            handleBadAPIResponse(response)
+            return
+        }
+
+    } catch(err) {
+        //need to make sure this works 
+
+        let message = `A fetch/network error occurred. Please check your network and try again. 
+        If this issue persists, please contact the dev team.`
+        finishLoading("error-message", message)
+        return 
+
     }
 
     let finalData
@@ -217,12 +230,8 @@ async function submitMessage() {
         }
     }
 
-    document.querySelector(".loading")?.remove()
-    setFetching(false)
+    finishLoading("assistant-message", renderData(finalData))
     console.log("data:", finalData)
-
-    messagesEl.innerHTML += `<div class="assistant-message"> ${renderData(finalData)} </div>`
-    localStorage.setItem("currentChat", messagesEl.innerHTML)
 }
 
 // formEl.addEventListener("submit", async (event) => {
@@ -246,3 +255,28 @@ formInputEl.addEventListener("keydown", (event) => {
 
     submitMessage()
 })
+
+
+// ----- ERROR HANDLING -----
+
+function handleBadAPIResponse(response){
+    let userMessage = ""
+    if (response.status === 400) {
+        userMessage = `Our system detected an invalid HTTP request, please try again. 
+        If this issue persists, please contact the dev team.`
+    } else if (response.status === 404) {
+        userMessage = `LLM server was not found / cannot be reached, please try again. 
+        If this issue persists, please contact the dev team.`
+    } else if (response.status >= 500) {
+        userMessage = `An internal server error occurred, please try again. If this issue 
+        persists, please contact the dev team.`
+    }
+    finishLoading("error-message", userMessage)
+}
+
+function finishLoading(divClass, message) {
+    document.querySelector(".loading")?.remove()
+    setFetching(false)
+    messagesEl.innerHTML += `<div class="${divClass}"> ${message} </div>`
+    localStorage.setItem("currentChat", messagesEl.innerHTML)
+}

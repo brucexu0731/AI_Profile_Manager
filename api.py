@@ -303,7 +303,7 @@ def sse(data):
 
 @app.post("/agent/{session_id}/ask-stream")
 def ask_agent_stream(session_id: str, body: UserQuery):
-
+    #raise Exception("Test error")
     user_message = body.query
     (
         search_state, 
