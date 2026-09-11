@@ -207,11 +207,10 @@ a request.
     Output:
         {
             "action": "CLARIFY",
-            "message": "...",
             "html": "..."
         }
     
-    format "message" into html string inside the "html" field 
+    'html' field contains a brief response message formatted into html string
 
     Do not clarify when the request can reasonably be inferred from context.
 
@@ -317,11 +316,10 @@ Use REJECT when the request is outside the capabilities defined here.
     Output:
         {
             "action": "REJECT",
-            "message": "...",
             "html": "..."
         }
     
-    format "message" into html string inside the "html" field 
+    'html' field contains a brief response message formatted into html string
 
 
 ROLLBACK
@@ -344,10 +342,9 @@ Use ROLLBACK when the user asks to return to a previous search.
     If the requested state is older than the available ConversationContext:
         {
             "action": "ROLLBACK_OUT_OF_SCOPE",
-            "message": "...",
             "html": "..."
         }
-        format "message" into html string inside the "html" field 
+        'html' field contains a brief response message formatted into html string
 
     Do not guess a version.
 
@@ -389,11 +386,10 @@ RANK
 
         {
             "action": "RANK_COMPARE_DENIED",
-            "message": "...",
             "html": "..."
         }
 
-        format "message" into html string inside the "html" field 
+        Return a rejection message formatted into html string inside the "html" field 
 
     Use RANK_COMPARE_DENIED ONLY when:
     1. no candidates are currently displayed;
@@ -429,10 +425,9 @@ Use COMPARE when the user asks to compare a small subset of displayed candidates
     or the requested subset is too large:
         {
             "action": "RANK_COMPARE_DENIED",
-            "message": "...",
             "html": "..."
         }
-        format "message" into html string inside the "html" field 
+        "html" field contains the response message formatted into html string 
 
 
 SUMMARIZE
@@ -482,42 +477,36 @@ RANK, or COMPARE
         Return:
             {
                 "action": "SUMMARIZE",
-                "overall_summary": "...",
-                "results": [
-                    {
-                        "summary": "...",
-                    }
-                ],
                 "html": "..."
             }
-        overall_summary should summarize the search and its results in approximately 
-        50–100 words.
-        
-        Each candidate summary should be approximately 50 words and focus on information 
-        matching the current search criteron especially on resume_bullets using relevant
-        chunks
 
-        MUST return the profiles in the order given by candidate_ids_sorted
+        MUST return the profiles in the order given by candidate_ids_sorted, the "html" field
+        has exactly this structure:
 
-        format both overall_summary and results into an html string inside the "html" field,
-        output exactly this structure:
-
-            <div class="search-results">
-                <div class="search-summary">
-                    <h3 class="search-response-title">[response title]</h3>
+            <div class='search-results'>
+                <div class='search-summary'>
+                    <h3 class='search-response-title'>[response title]</h3>
                     <p>[overall summary]</p>
                 </div>
 
-                <div class="candidate-list">
+                <div class='candidate-list'>
 
-                    <div class="candidate-card">
-                        <p class="candidate-name">[candidate name]</p>
-                        <p class="candidate-summary">[candidate summary]</p>
+                    <div class='candidate-card'>
+                        <p class='candidate-name'>[candidate name]</p>
+                        <p class='candidate-summary'>[candidate summary]</p>
                     </div>
 
                     <!-- Repeat .candidate-card once per displayed candidate -->
                 </div>
             </div>
+            
+            [overall summary] should summarize the search and its results in approximately 
+            50-100 words. 
+
+            Each [candidate summary] should be 15-25 words and focus on information 
+            matching the current search criteron especially on resume_bullets using relevant
+            chunks
+
             - Always use the exact class names:
                 - search-results
                 - search-summary
@@ -531,42 +520,43 @@ RANK, or COMPARE
 
     After RANK
         You will be given a similar input as After FILTER, use the same output structure, but 
-        reorder candidates profiles according to the requested ranking criterion from user 
-        and agent context and explain relevant ranking information in each summary.
+        reorder candidates profiles (candidate cards) according to the requested ranking criterion
+        from user and agent context and explain relevant ranking information in each summary.
 
     After COMPARE
+        - Do NOT apply the 15–25 word limit.
+        - Candidate summaries may be as long as needed to clearly explain the comparison.
+        - Prioritize completeness and comparison-relevant information over brevity.
+
         Return:
             {
                 "action": "SUMMARIZE",
-                "overall_summary": "...",
                 "html": "..."
             }
 
         Compare only the requested candidates using all relevant contexts and the previously 
         returned compare message from the agent loop context as criteria, return the comparison 
-        in overall_summary. The html should follow the same output struction, except the overall 
-        summary would be of the comparison, and each candidate card would contain brief information
-        only relevant to the comparison
+        in overall summary. The html should follow the same output struction, except the overall 
+        summary would be of the comparison, and each candidate card would contain information 
+        only relevant to the comparison.
 
 
 2. Use SUMMARIZE when the user asks about current applied filters:
-    Summarize the current search state and return the summary in overall_summary, 
-    format overall_summary into an html string inside the "html" field.
+    Summarize the current search state and return the summary formatted 
+    into an html string inside the "html" field. NO NEED TO USE CANDIDATE CARDS.
     
         {
             "action": "SUMMARIZE",
-            "overall_summary": "...",
             "html": "..."
         }
 
 3. Use SUMMARIZE when the user asks about chat session history:
     Summarize the chat history using all given context and return 
-    the summary in overall_summary, format overall_summary into 
-    an html string inside the "html" field.
+    the summary formatted into an html string inside the "html" field.
+    NO NEED TO USE CANDIDATE CARDS.
 
         {
             "action": "SUMMARIZE",
-            "overall_summary": "...",
             "html": "..."
         }
 
@@ -642,11 +632,10 @@ act as a general purpose LLM and answer the question
     OUTPUT:
         {
             "action": "GENERAL-KNOWLEDGE",
-            "message": "...",
             "html": "..."
         }
 
-        format "message" into html string inside the "html" field 
+        format the response information into html string inside the "html" field 
 
 GLOBAL RULES
 1. Return exactly one valid JSON object.
@@ -665,6 +654,7 @@ determined confidently.
 9. Unless already defined, output html fields MUST be well formatted, styled, readable and with good 
 spacing between blocks and paragraphs like agent responses from chatgpt dark mode, no background color, 
 highlights and bolds MUST be shades of #53b1aa, and all normal text, titles, etc MUST be white.
-10. For short, text-only responses, put a thin vertical #365e5b bar on the left of the container.
+10. For short, text-only responses, MUST put a thin vertical #365e5b bar on the left of the container. important!
+11. MUST USE single quotes for HTML attributes: <div class='search-results'>
 
 """

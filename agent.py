@@ -18,6 +18,8 @@ model = ChatOpenAI(api_key=openai_key, model=openai_model) #langchain's openai w
 
 
 ### Setting up the Agent ###
+def sse(data):
+    return f"data: {json.dumps(data)}\n\n"
 
 class Agent():
 
@@ -66,3 +68,84 @@ class Agent():
 
 
 
+    def call_stream(self, message: str | dict):
+        if not isinstance(message, str):
+            message = json.dumps(message)
+
+        self.current_loop_history.append({
+            "role": "user",
+            "content": message
+        })
+
+        stream = client.chat.completions.create(
+            model=openai_model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": self.system_prompt
+                },
+                *self.current_loop_history
+            ],
+            stream=True
+        )
+
+        prefix = '{"action":"SUMMARIZE","html":"'
+        suffix = '"}'
+        full_result = ""
+        prefix_buffer = ""
+        html_buffer = ""
+        started = False
+
+        for chunk in stream:
+            content = chunk.choices[0].delta.content
+
+            if not content:
+                continue
+
+            full_result += content
+
+            # Still waiting until we've received the entire fixed prefix
+            if not started:
+                prefix_buffer += content
+
+                if len(prefix_buffer) < len(prefix):
+                    continue
+
+                if not prefix_buffer.startswith(prefix):
+                    raise ValueError(
+                        f"Unexpected SUMMARIZE response prefix: {prefix_buffer}"
+                    )
+
+                # Anything after the prefix is HTML
+                html_buffer += prefix_buffer[len(prefix):]
+                prefix_buffer = ""
+                started = True
+
+            else:
+                html_buffer += content
+
+            # Always keep the final len(suffix) characters buffered.
+            # This prevents `"}` from being streamed to the frontend.
+            if len(html_buffer) > len(suffix):
+                send = html_buffer[:-len(suffix)]
+                html_buffer = html_buffer[-len(suffix):]
+
+                if send:
+                    yield sse({
+                        "type": "summarizing",
+                        "output": {
+                            "html": send
+                        }
+                    })
+
+
+        # stream is now finished
+        parsed_result = json.loads(full_result)
+        clean_result = json.dumps(parsed_result)
+
+        self.current_loop_history.append({
+            "role": "assistant",
+            "content": clean_result
+        })
+
+        return parsed_result

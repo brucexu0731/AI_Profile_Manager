@@ -56,7 +56,7 @@ if (messagesEl.innerHTML == ""){
     toggleHome()
 } else {
     toggleChat()
-    scrollToBottom()
+    scrollToBottomUser()
 }
 
 //Check if any llm is still processing
@@ -104,7 +104,7 @@ async function clearHistory() {
     }
 }
 
-function scrollToBottom() {
+function scrollToBottomUser() {
     const messages = document.querySelectorAll(".msg")
     const lastMessage = messages[messages.length-1]
     console.log("lastMessage:", lastMessage?.innerText)
@@ -112,6 +112,19 @@ function scrollToBottom() {
     if (lastMessage) {
         lastMessage.scrollIntoView({ behavior: 'smooth' })
 
+    }
+}
+
+function scrollToBottomAssistant() {
+    const messages = document.querySelectorAll(".assistant-message")
+    const lastMessage = messages[messages.length-1]
+    console.log("lastMessage:", lastMessage?.innerText)
+    console.dir(lastMessage)
+    if (lastMessage) {
+        lastMessage.scrollIntoView({
+            behavior: "smooth",
+            block: "end"
+        })
     }
 }
 
@@ -133,7 +146,7 @@ async function submitMessage() {
 
     // find the new message element and scroll to it
     setTimeout(() => {
-        scrollToBottom()
+        scrollToBottomUser()
     }, 10);
 
 
@@ -150,7 +163,6 @@ async function submitMessage() {
         })
 
         if (!response.ok) {
-            // ❗❗❗
             console.log("BAD API RESPONSE")
             handleBadAPIResponse(response)
             return
@@ -158,7 +170,6 @@ async function submitMessage() {
 
     } catch(err) {
         //need to make sure this works 
-
         let message = `A fetch/network error occurred. Please check your network and try again. 
         If this issue persists, please contact the dev team.`
         finishLoading("error-message", message)
@@ -172,65 +183,96 @@ async function submitMessage() {
     try {
         reader = response.body.getReader()
     } catch (error) {
-        // ❗❗❗
-        handleMissingReader(response, error)
+        let message = `An error occured while initializing reader. Please check your 
+        network and try again. If this issue persists, please contact the dev team.`
+        finishLoading("error-message", message)
         return
     }
+
     const decoder = new TextDecoder()
     let buffer = ""
+    const responseId = `response-${crypto.randomUUID()}`
+    messagesEl.innerHTML += `<div id="${responseId}" class="assistant-message"></div>`
+    const responseEl = document.getElementById(responseId)
+    let streamedHtml = ""
+    let chunkCounter = 0
 
     while (true) {
         let value
         let done
+        let readResult
         try {
-            const readResult = await reader.read()
-            value = readResult.value
-            done = readResult.done
+        readResult = await reader.read()
         } catch (error) {
-            // ❗❗❗
-            handleReadError(error)
-            break
+            let message = `An error occured with Reader while reading response stream. Please check your 
+            network and try again. If this issue persists, please contact the dev team.`
+            finishLoading("error-message", message)
+            return
         }
+        value = readResult.value
+        done = readResult.done
 
         if (done && !finalData) {
-            // ❗❗❗
-            handleNoFinalData()
-            break
-        }
-
-        if (done && finalData.type === 'error') {
-            // ❗❗❗
-            handleSseError(finalData)
-            break
+            let message = `Something went wrong while generating response. Please try again. 
+            If this issue persists, please contact the dev team.`
+            finishLoading("error-message", message)
+            return
         }
 
         if (done) {
             break
         }
-
+        
+        //grabbing each SSE data event
         buffer += decoder.decode(value, { stream: true })
 
         const events = buffer.split("\n\n")
         buffer = events.pop()  // keep incomplete event
         if (events.length === 0) continue
 
-        const event = events[events.length - 1]
-        if (!event.startsWith("data: ")) continue
-        const jsonString = event.slice(6)
-        const data = JSON.parse(jsonString)
+        for (const event of events) {
+            if (!event.startsWith("data: ")) continue
+            const jsonString = event.slice(6)
+            const data = JSON.parse(jsonString)
 
-        if (data.type === "final") {
-            finalData = data.output
-            break
-        }
+            if (data.type === "final") {
+                finalData = data.output
+                break
+            }
 
-        const loadingEl = document.querySelector(".loading")
-        if (loadingEl) {
-            loadingEl.innerHTML = `<span class="spinner"></span>${data.output.html}`
+            if (data.type === "error") {
+                console.log("GOT ERROR EVENT")
+                
+                let message = `Something went wrong while processing your request. Please try again. 
+                If this issue persists, please contact the dev team.`
+                finishLoading("error-message", message)
+                return
+            }
+
+            const loadingEl = document.querySelector(".loading")
+            if (loadingEl && data.type === "progress") {
+                loadingEl.innerHTML = `<span class="spinner"></span>${data.output.html}`
+            }
+            if (data.type == "summarizing") {
+                chunkCounter += 1
+                streamedHtml += data.output.html
+                responseEl.innerHTML = streamedHtml.replaceAll("\\n", "")
+                if (chunkCounter % 50 === 0) {
+                setTimeout(() => {
+                    scrollToBottomAssistant()
+                }, 10);
+            }
+            }
         }
     }
 
-    finishLoading("assistant-message", renderData(finalData))
+    if (streamedHtml) {
+        finishLoadingStream()
+    } else {
+        responseEl.remove()
+        finishLoading("assistant-message", finalData.html)
+    }
+    console.log("FULL HTML:", responseEl.innerHTML)
     console.log("data:", finalData)
 }
 
@@ -270,6 +312,8 @@ function handleBadAPIResponse(response){
     } else if (response.status >= 500) {
         userMessage = `An internal server error occurred, please try again. If this issue 
         persists, please contact the dev team.`
+    } else {
+        userMessage = `The request failed (${response.status}). Please try again.`
     }
     finishLoading("error-message", userMessage)
 }
@@ -278,5 +322,11 @@ function finishLoading(divClass, message) {
     document.querySelector(".loading")?.remove()
     setFetching(false)
     messagesEl.innerHTML += `<div class="${divClass}"> ${message} </div>`
+    localStorage.setItem("currentChat", messagesEl.innerHTML)
+}
+
+function finishLoadingStream() {
+    document.querySelector(".loading")?.remove()
+    setFetching(false)
     localStorage.setItem("currentChat", messagesEl.innerHTML)
 }
