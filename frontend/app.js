@@ -151,6 +151,8 @@ async function submitMessage() {
 
 
     let response
+
+    // ----- ‼️ Handling Fetch Error and Server Error -----
     try {
         response = await fetch(`/agent/${sessionId}/ask-stream`, {
             method: "POST",
@@ -169,17 +171,19 @@ async function submitMessage() {
         }
 
     } catch(err) {
-        //need to make sure this works 
         let message = `A fetch/network error occurred. Please check your network and try again. 
         If this issue persists, please contact the dev team.`
         finishLoading("error-message", message)
         return 
 
     }
+    // -----
 
     let finalData
     // Handling SSE stream
     let reader
+
+    // ----- ‼️If reader failed, handle error -----
     try {
         reader = response.body.getReader()
     } catch (error) {
@@ -189,6 +193,7 @@ async function submitMessage() {
         return
     }
 
+
     const decoder = new TextDecoder()
     let buffer = ""
     const responseId = `response-${crypto.randomUUID()}`
@@ -197,10 +202,15 @@ async function submitMessage() {
     let streamedHtml = ""
     let chunkCounter = 0
 
+    /* ------------------------------------
+    ** Stream processing
+    --------------------------------------- */
     while (true) {
         let value
         let done
         let readResult
+
+        // ----- ‼️If the stream died due to network, reader would throw error -----
         try {
         readResult = await reader.read()
         } catch (error) {
@@ -209,9 +219,11 @@ async function submitMessage() {
             finishLoading("error-message", message)
             return
         }
+
         value = readResult.value
         done = readResult.done
 
+        // ----- ‼️If the stream shuts down but the response is incomplete, report it here-----
         if (done && !finalData) {
             let message = `Something went wrong while generating response. Please try again. 
             If this issue persists, please contact the dev team.`
@@ -223,11 +235,10 @@ async function submitMessage() {
             break
         }
         
-        //grabbing each SSE data event
-        buffer += decoder.decode(value, { stream: true })
+        buffer += decoder.decode(value, { stream: true }) //grabbing each SSE data event
+        const events = buffer.split("\n\n") //each complete package would be delimited by \n\n, so this grabs each event
+        buffer = events.pop()  // keep incomplete event (split will produce "" as the last element if all events are complete)
 
-        const events = buffer.split("\n\n")
-        buffer = events.pop()  // keep incomplete event
         if (events.length === 0) continue
 
         for (const event of events) {
@@ -240,6 +251,7 @@ async function submitMessage() {
                 break
             }
 
+            // ----- ‼️If an error occurred in events from the api, handle it here-----
             if (data.type === "error") {
                 console.log("GOT ERROR EVENT")
                 
