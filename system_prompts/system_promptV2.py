@@ -29,7 +29,7 @@ SEARCH STATE
     - name: list[str]
     - phone_number: list[str]
     - email: list[str]
-    - highest_degree: list[str]
+    - highest_degree: list[str] 
     - industry: list[list[str]]
     - add_by: list[str]
     - current_company: list[str]

@@ -28,6 +28,19 @@ class ResultState(BaseModel):
     resume_bullet_chunks: dict[int, dict[str, list[ChunkWithKeyword]]] = Field(
         default_factory = dict
     )
+
+    # {
+    #     id1: {
+    #         keyword1: [chunk1, chunk2]
+    #         keyword2: [chunk1, chunk2, ....]
+    #     }
+    #     id2: {
+    #         keyword1: [chunk1, chunk2]
+    #         keyword2: [chunk1, chunk2, ....]
+    #     }
+
+    # }
+
     #feedback_chunks: dict[int, list[tuple[int, float, str]]] = Field(default_factory=dict)
 
     candidate_score: dict[int, float] = Field(default_factory=dict)

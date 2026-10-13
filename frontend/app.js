@@ -203,7 +203,7 @@ async function submitMessage() {
     let chunkCounter = 0
 
     /* ------------------------------------
-    ** Stream processing
+     * Stream processing
     --------------------------------------- */
     while (true) {
         let value
@@ -311,7 +311,7 @@ formInputEl.addEventListener("keydown", (event) => {
 })
 
 
-// ----- ERROR HANDLING -----
+// ----- ERROR HANDLERS -----
 
 function handleBadAPIResponse(response){
     let userMessage = ""
@@ -329,6 +329,8 @@ function handleBadAPIResponse(response){
     }
     finishLoading("error-message", userMessage)
 }
+
+// ----- CLEANUP FUNCTIONS -----
 
 function finishLoading(divClass, message) {
     document.querySelector(".loading")?.remove()
