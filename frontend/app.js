@@ -154,7 +154,7 @@ async function submitMessage() {
 
     // ----- ‼️ Handling Fetch Error and Server Error -----
     try {
-        response = await fetch(`/agent/${sessionId}/ask-stream`, {
+        response = await fetch(`/agentV1/${sessionId}/ask-stream`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
