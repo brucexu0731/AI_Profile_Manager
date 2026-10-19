@@ -10,3 +10,4 @@ SQLAlchemy
 langgraph[checkpoint]
 redis[hiredis]
 fastapi[standard]
+requests
