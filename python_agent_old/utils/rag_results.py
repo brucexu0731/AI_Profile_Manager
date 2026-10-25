@@ -1,7 +1,7 @@
 
 import requests
 from pydantic import BaseModel, ConfigDict, Field
-from models import Chunk, ChunkWithKeyword
+from python_agent_old.models import Chunk, ChunkWithKeyword
 
 RAG_API_URL = "http://localhost:8080/agents/rag/work-experiences"
 
@@ -27,6 +27,7 @@ def call_rag_api(payload: SearchPayload) -> list[Chunk]:
     response = requests.post(
         RAG_API_URL,
         json=payload.model_dump()
+        timeout = 20
     )
 
     if not response.ok:

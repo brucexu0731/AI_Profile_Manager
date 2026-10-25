@@ -62,7 +62,16 @@ async def scrutiny(
     state: State
 ) -> Command[Literal["agent", "__end__"]]:
 
-    user_message = HumanMessage(content=state.user_message)
+    user_message = next(
+        (
+            message
+            for message in reversed(state.messages)
+            if isinstance(message, HumanMessage)
+        ),
+        None,
+    )
+    if user_message is None:
+        raise ValueError("No human message found in state.messages")
 
     verdict = await scrutiny_llm.ainvoke([
         SystemMessage(content=SCRUTINY_PROMPT),
@@ -86,20 +95,10 @@ async def scrutiny(
         # Update state and terminate
         return Command(
             update={
-                "messages": [
-                    user_message,
-                    AIMessage(content=message)
-                ],
-                "response": message,
-                "action": "REJECT"
+                "messages": [AIMessage(content=message)],
+                "response": message
             },
             goto=END
         )
 
-    # Allowed: append user message and continue
-    return Command(
-        update={
-            "messages": [user_message]
-        },
-        goto="agent"
-    )
+    return Command(goto="agent")

@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 import json
 
-from models import SearchState, ResultState, DisplayState
+from python_agent_old.models import SearchState, ResultState, DisplayState
 
 load_dotenv()
 

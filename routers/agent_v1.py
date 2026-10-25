@@ -3,17 +3,17 @@ import redis
 import os
 from pydantic import BaseModel 
 from dotenv import load_dotenv
-from models import SearchState, ResultState, DisplayState
-from utils.get_or_create_session import get_or_create_session
-from utils.filter_and_rank import filter_and_rank
-from system_prompts.system_promptV2 import prompt
+from python_agent_old.models import SearchState, ResultState, DisplayState
+from python_agent_old.utils.get_or_create_session import get_or_create_session
+from python_agent_old.utils.filter_and_rank import filter_and_rank
+from python_agent_old.system_prompts.system_promptV2 import prompt
 
 import json
-from agent import Agent
-from utils.rag_results import get_rag_results
-from utils.get_candidate_info import get_candidate_info
-from utils.generate_display_profiles import generate_display_profiles
-from utils.update_redis_states import update_redis_states
+from python_agent_old.agent import Agent
+from python_agent_old.utils.rag_results import get_rag_results
+from python_agent_old.utils.get_candidate_info import get_candidate_info
+from python_agent_old.utils.generate_display_profiles import generate_display_profiles
+from python_agent_old.utils.update_redis_states import update_redis_states
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
